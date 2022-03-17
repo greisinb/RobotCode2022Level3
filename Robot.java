@@ -77,10 +77,10 @@ public class Robot extends TimedRobot {
     lifterSwitch = new DigitalInput(9);
     shooterPIDController = shooterMotor.getPIDController();
     // set PID coefficients
-    shooterPIDController.setP(0.006);
-    shooterPIDController.setI(0);
-    shooterPIDController.setD(0.005); //.005
-    shooterPIDController.setIZone(0); //100
+    shooterPIDController.setP(0.0018);
+    shooterPIDController.setI(0.0062);
+    shooterPIDController.setD(0.000); 
+    shooterPIDController.setIZone(0); 
     shooterPIDController.setFF(0.000015);
     shooterPIDController.setOutputRange(0, 1);
     maxRPM = 5700;
@@ -90,6 +90,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotPeriodic() {
+    SmartDashboard.putNumber("Encoder Velocity", shooterEncoder.getVelocity());
     NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
     NetworkTableEntry tx = table.getEntry("tx");
     NetworkTableEntry ty = table.getEntry("ty");
@@ -109,9 +110,8 @@ public class Robot extends TimedRobot {
       targetLights.set(false);
     }
     double shooterSpeed = shooterEncoder.getVelocity();  //sets the shooter speed variable
-    if(shooterSpeed > 4000) { //runs the lifter motor only if the shooter motor has reached speed
+    if(shooterSpeed > 5600) { //runs the lifter motor only if the shooter motor has reached speed
       lifterMotor.set(0.4);
-      ballPresent = false;  //assumes that the ball has been launched
     }
     else{
       lifterMotor.set(0); //shuts off the lifter if shooter is under speed
@@ -151,7 +151,7 @@ public class Robot extends TimedRobot {
       double startTime = Timer.getFPGATimestamp();
       double time = Timer.getFPGATimestamp();
       intakeSolenoid.set(Value.kReverse); //sets solenoid in reverse position, can also set for kOff and kForward
-      while(!((time - startTime > 5) || (ballPresent))){ //runs the lifter until a ball is detected or 5 seconds have passed
+      while(!((time - startTime > 2.5) || (ballPresent))){ //runs the lifter until a ball is detected or 5 seconds have passed
         intakeMotor.set(0.5);
         lifterMotor.set(0.5);
         time = Timer.getFPGATimestamp();
@@ -168,7 +168,7 @@ public class Robot extends TimedRobot {
     }
     if(driverStick.getRawButtonReleased(1)){
       shooterPIDController.setReference(0, CANSparkMax.ControlType.kVelocity);
-      
+      ballPresent = false;  //assumes that the ball has been launched
     }
     //Vision autopilot command
     while(driverStick.getRawButton(3)){
@@ -180,7 +180,7 @@ public class Robot extends TimedRobot {
       double heading_error = x;
       double distance_error = y;
       myRobot.arcadeDrive(-distance_error*.05, heading_error*.05); //auto drive to zero error * a proportion constant, may need to add a minimum drive value
-     // shooterPIDController.setReference(4000, CANSparkMax.ControlType.kVelocity); //spool up shooter wheels for shot preperation
+      shooterPIDController.setReference(5000, CANSparkMax.ControlType.kVelocity);
 
     }
 

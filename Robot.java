@@ -52,7 +52,8 @@ public class Robot extends TimedRobot {
   private SparkMaxPIDController shooterPIDController;
   public double kP, kI, kD, kIz, kFF, kMaxOutput, kMinOutput, maxRPM;
   Solenoid targetLights = new Solenoid(PneumaticsModuleType.CTREPCM, 2);
- 
+  private CANSparkMax climberMotor;
+
   //adjustable variables
   public final int shootSpeed = 5700;  //sets shooterspeed for launching the ball
   public final double liftSpeed = 0.4;
@@ -77,6 +78,7 @@ public class Robot extends TimedRobot {
     intakeMotor = new CANSparkMax(5, MotorType.kBrushed);
     lifterMotor = new CANSparkMax(6, MotorType.kBrushless);
     shooterMotor = new CANSparkMax(7, MotorType.kBrushless);
+    climberMotor = new CANSparkMax(8, MotorType.kBrushed);
     shooterEncoder = shooterMotor.getEncoder(); 
     lifterSwitch = new DigitalInput(9);
     shooterPIDController = shooterMotor.getPIDController();
@@ -114,7 +116,7 @@ public class Robot extends TimedRobot {
       targetLights.set(false);
     }
     double shooterSpeed = shooterEncoder.getVelocity();  //sets the shooter speed variable
-    if(shooterSpeed > (shootSpeed-500)) { //runs the lifter motor only if the shooter motor has reached speed
+    if(shooterSpeed > (shootSpeed-250)) { //runs the lifter motor only if the shooter motor has reached speed
       lifterMotor.set(liftSpeed);
     }
     else{
@@ -154,7 +156,7 @@ public class Robot extends TimedRobot {
         myRobot.arcadeDrive(0, .3); //rotate the robot
       }
         else{
-          myRobot.arcadeDrive(0, .0); // stop the robot
+          myRobot.arcadeDrive(0, .0); // stop the robot rotation
         }
       }
     else if((time - startTime > 4) && (time-startTime <7)){ //if time is greater than 4 and less than 7
@@ -215,6 +217,18 @@ public class Robot extends TimedRobot {
     if(driverStick.getRawButtonReleased(1)){
       shooterPIDController.setReference(0, CANSparkMax.ControlType.kVelocity);
       ballPresent = false;  //assumes that the ball has been launched
+    }
+    if(driverStick.getRawButtonPressed(7)){
+      climberMotor.set(0.7);
+    }
+    if(driverStick.getRawButtonReleased(7)){
+      climberMotor.set(0);
+    }
+    if(driverStick.getRawButtonPressed(6)){
+      climberMotor.set(-0.7);
+    }
+    if(driverStick.getRawButtonReleased(6)){
+      climberMotor.set(0);
     }
     //Vision autopilot command
     while(driverStick.getRawButton(3)){

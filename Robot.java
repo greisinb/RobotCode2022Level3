@@ -52,6 +52,10 @@ public class Robot extends TimedRobot {
   private SparkMaxPIDController shooterPIDController;
   public double kP, kI, kD, kIz, kFF, kMaxOutput, kMinOutput, maxRPM;
   Solenoid targetLights = new Solenoid(PneumaticsModuleType.CTREPCM, 2);
+ 
+  //adjustable variables
+  public final int shootSpeed = 5700;  //sets shooterspeed for launching the ball
+  public final double liftSpeed = 0.4;
 
   
   DoubleSolenoid intakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1); //creates double solenoid (solenoid2) on output 0 and 1
@@ -84,7 +88,7 @@ public class Robot extends TimedRobot {
     shooterPIDController.setFF(0.000015);
     shooterPIDController.setOutputRange(0, 1);
     maxRPM = 5700;
-
+    
 
   }
 
@@ -110,8 +114,8 @@ public class Robot extends TimedRobot {
       targetLights.set(false);
     }
     double shooterSpeed = shooterEncoder.getVelocity();  //sets the shooter speed variable
-    if(shooterSpeed > 5600) { //runs the lifter motor only if the shooter motor has reached speed
-      lifterMotor.set(0.4);
+    if(shooterSpeed > (shootSpeed-500)) { //runs the lifter motor only if the shooter motor has reached speed
+      lifterMotor.set(liftSpeed);
     }
     else{
       lifterMotor.set(0); //shuts off the lifter if shooter is under speed
@@ -120,19 +124,61 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousInit() {
-    startTime = Timer.getFPGATimestamp();
+    startTime = Timer.getFPGATimestamp(); //get start time of auto mode
+    ballPresent = true; //set ball present to true because 1 will be pre-loaded
   }
 
   @Override
-  public void autonomousPeriodic() { //drives the robot forward for 2 seconds during auto
-    double time = Timer.getFPGATimestamp();
-    if(time - startTime < 2){
-      myRobot.arcadeDrive(-0.5, 0);
+  public void autonomousPeriodic() { 
+    double time = Timer.getFPGATimestamp(); //get current time
+
+    NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight"); //get vision variables
+    NetworkTableEntry tx = table.getEntry("tx");
+    NetworkTableEntry ty = table.getEntry("ty");
+    NetworkTableEntry tv = table.getEntry("tv");
+    double x = tx.getDouble(0.0);
+    double y = ty.getDouble(0.0);
+    double targetAquired = tv.getDouble(0.0);
+    double heading_error = x;
+    double distance_error = y;
+
+    if(time - startTime < 2){ //for 2 seconds
+      myRobot.arcadeDrive(-0.5, 0); //drive forward
+      intakeSolenoid.set(Value.kReverse); //drop intake
+      intakeMotor.set(0.5); //run intake wheels
     }
-    else {
-      myRobot.arcadeDrive(0, 0);
+    else if((time - startTime > 2) && (time-startTime <4)){ //if time is greater than 2 and less than 4 seconds
+      intakeSolenoid.set(Value.kForward); //lift intake
+      intakeMotor.set(0); //stop intake wheels
+      if(targetAquired==0){ //if no target is visible
+        myRobot.arcadeDrive(0, .3); //rotate the robot
+      }
+        else{
+          myRobot.arcadeDrive(0, .0); // stop the robot
+        }
+      }
+    else if((time - startTime > 4) && (time-startTime <7)){ //if time is greater than 4 and less than 7
+        myRobot.arcadeDrive(-distance_error*.05, heading_error*.05); //auto aim and range
+      }
+    else if((time - startTime > 7) && (time-startTime <11) && (targetAquired==1)){ //if time is greater than 7 and less than 11 and there is a visible target
+      myRobot.arcadeDrive(0, .0); //stop the robot
+      shooterPIDController.setReference(shootSpeed, CANSparkMax.ControlType.kVelocity); //shoot
+      ballPresent=false; //set ball present to false because the ball will have been shot
     }
-  }
+    else if((time - startTime > 11) && (time-startTime <14.5)){ //if time is greater than 11 and less than 14.5
+      shooterPIDController.setReference(0, CANSparkMax.ControlType.kVelocity); //turn off shooter
+      myRobot.arcadeDrive(-.2, 0); //drive as needed to leave start area for cross the line points
+    }
+    else{ //failsafe to shut off all mechanisms
+      intakeSolenoid.set(Value.kForward); //lift intake
+      intakeMotor.set(0); //stop intake wheels
+      shooterPIDController.setReference(0, CANSparkMax.ControlType.kVelocity); //turn off shooter
+      myRobot.arcadeDrive(0, .0); //stop robot
+    }
+    }
+    
+    
+  
 
   @Override
   public void teleopInit() {
@@ -160,10 +206,10 @@ public class Robot extends TimedRobot {
       }
       intakeMotor.set(0); //when while loop is exited shut off motors and set ball present to false
       lifterMotor.set(0);
-      //ballPresent = false;
+      
     }
     if (driverStick.getRawButtonPressed(1)){
-      shooterPIDController.setReference(5700, CANSparkMax.ControlType.kVelocity);
+      shooterPIDController.setReference(shootSpeed, CANSparkMax.ControlType.kVelocity);
       
     }
     if(driverStick.getRawButtonReleased(1)){
@@ -180,7 +226,7 @@ public class Robot extends TimedRobot {
       double heading_error = x;
       double distance_error = y;
       myRobot.arcadeDrive(-distance_error*.05, heading_error*.05); //auto drive to zero error * a proportion constant, may need to add a minimum drive value
-      shooterPIDController.setReference(5000, CANSparkMax.ControlType.kVelocity);
+      shooterPIDController.setReference((shootSpeed-500), CANSparkMax.ControlType.kVelocity); //spool up shooter to just under shoot speed
 
     }
 

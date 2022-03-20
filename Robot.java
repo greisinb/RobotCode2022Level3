@@ -56,7 +56,7 @@ public class Robot extends TimedRobot {
 
   //adjustable variables
   public final int shootSpeed = 5700;  //sets shooterspeed for launching the ball
-  public final double liftSpeed = 0.4;
+  public final double liftSpeed = 0.35;
 
   
   DoubleSolenoid intakeSolenoid = new DoubleSolenoid(PneumaticsModuleType.CTREPCM, 0, 1); //creates double solenoid (solenoid2) on output 0 and 1
@@ -145,38 +145,37 @@ public class Robot extends TimedRobot {
     double distance_error = y;
 
     if(time - startTime < 2){ //for 2 seconds
-      myRobot.arcadeDrive(-0.5, 0); //drive forward
-      intakeSolenoid.set(Value.kReverse); //drop intake
+      myRobot.arcadeDrive(0.5, 0); //drive forward
+      intakeSolenoid.set(Value.kForward); //drop intake
       intakeMotor.set(0.5); //run intake wheels
     }
     else if((time - startTime > 2) && (time-startTime <4)){ //if time is greater than 2 and less than 4 seconds
-      intakeSolenoid.set(Value.kForward); //lift intake
+      intakeSolenoid.set(Value.kReverse); //lift intake
       intakeMotor.set(0); //stop intake wheels
-      if(targetAquired==0){ //if no target is visible
-        myRobot.arcadeDrive(0, .3); //rotate the robot
-      }
-        else{
-          myRobot.arcadeDrive(0, .0); // stop the robot rotation
-        }
+      myRobot.arcadeDrive(0, 0-.37);
+      //rotate the robot
       }
     else if((time - startTime > 4) && (time-startTime <7)){ //if time is greater than 4 and less than 7
         myRobot.arcadeDrive(-distance_error*.05, heading_error*.05); //auto aim and range
       }
-    else if((time - startTime > 7) && (time-startTime <11) && (targetAquired==1)){ //if time is greater than 7 and less than 11 and there is a visible target
+    else if((time - startTime > 7) && (time-startTime <14.5) && (targetAquired==1)){ //if time is greater than 7 and less than 11 and there is a visible target
       myRobot.arcadeDrive(0, .0); //stop the robot
       shooterPIDController.setReference(shootSpeed, CANSparkMax.ControlType.kVelocity); //shoot
       ballPresent=false; //set ball present to false because the ball will have been shot
     }
-    else if((time - startTime > 11) && (time-startTime <14.5)){ //if time is greater than 11 and less than 14.5
-      shooterPIDController.setReference(0, CANSparkMax.ControlType.kVelocity); //turn off shooter
-      myRobot.arcadeDrive(-.2, 0); //drive as needed to leave start area for cross the line points
-    }
+    //else if((time - startTime > 11) && (time-startTime <14.5)){ //if time is greater than 11 and less than 14.5
+      //shooterPIDController.setReference(0, CANSparkMax.ControlType.kVelocity); //turn off shooter
+      //myRobot.arcadeDrive(-.6, 0); //drive as needed to leave start area for cross the line points
+    //}
     else{ //failsafe to shut off all mechanisms
-      intakeSolenoid.set(Value.kForward); //lift intake
+      intakeSolenoid.set(Value.kReverse); //lift intake
       intakeMotor.set(0); //stop intake wheels
       shooterPIDController.setReference(0, CANSparkMax.ControlType.kVelocity); //turn off shooter
       myRobot.arcadeDrive(0, .0); //stop robot
     }
+
+
+
     }
     
     
@@ -199,9 +198,9 @@ public class Robot extends TimedRobot {
       double startTime = Timer.getFPGATimestamp();
       double time = Timer.getFPGATimestamp();
       intakeSolenoid.set(Value.kReverse); //sets solenoid in reverse position, can also set for kOff and kForward
-      while(!((time - startTime > 2.5) || (ballPresent))){ //runs the lifter until a ball is detected or 5 seconds have passed
+      while(!((time - startTime > 1.5) || (ballPresent))){ //runs the lifter until a ball is detected or 5 seconds have passed
         intakeMotor.set(0.5);
-        lifterMotor.set(0.5);
+        lifterMotor.set(liftSpeed);
         time = Timer.getFPGATimestamp();
         ballPresent = lifterSwitch.get();
         myRobot.arcadeDrive(-driverStick.getY(), driverStick.getX());
@@ -219,16 +218,25 @@ public class Robot extends TimedRobot {
       ballPresent = false;  //assumes that the ball has been launched
     }
     if(driverStick.getRawButtonPressed(7)){
-      climberMotor.set(0.7);
+      climberMotor.set(1);
     }
     if(driverStick.getRawButtonReleased(7)){
       climberMotor.set(0);
     }
     if(driverStick.getRawButtonPressed(6)){
-      climberMotor.set(-0.7);
+      climberMotor.set(-1);
     }
     if(driverStick.getRawButtonReleased(6)){
       climberMotor.set(0);
+    }
+    while(driverStick.getRawButtonPressed(4)){
+      lifterMotor.set(-0.5);
+      intakeMotor.set(-0.5);
+      myRobot.arcadeDrive(-driverStick.getY(), driverStick.getX()); 
+    }
+    if(driverStick.getRawButtonReleased(4)){
+      lifterMotor.set(0);
+      intakeMotor.set(0);
     }
     //Vision autopilot command
     while(driverStick.getRawButton(3)){
@@ -239,8 +247,8 @@ public class Robot extends TimedRobot {
       double y = ty.getDouble(0.0);
       double heading_error = x;
       double distance_error = y;
-      myRobot.arcadeDrive(-distance_error*.05, heading_error*.05); //auto drive to zero error * a proportion constant, may need to add a minimum drive value
-      shooterPIDController.setReference((shootSpeed-500), CANSparkMax.ControlType.kVelocity); //spool up shooter to just under shoot speed
+      myRobot.arcadeDrive(-distance_error*.07, heading_error*.05); //auto drive to zero error * a proportion constant, may need to add a minimum drive value
+      //shooterPIDController.setReference((shootSpeed-500), CANSparkMax.ControlType.kVelocity); //spool up shooter to just under shoot speed
 
     }
 

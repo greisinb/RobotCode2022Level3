@@ -22,6 +22,7 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 
 //Camera Imports
+import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
@@ -35,7 +36,8 @@ import edu.wpi.first.networktables.NetworkTableInstance;
  */
 public class Robot extends TimedRobot {
   private DifferentialDrive myRobot; //names a differential drive named myRobot
-  private Joystick driverStick; //names a joystick named driverStick
+  private Joystick leftStick; //names a joystick named driverStick
+  private Joystick rightStick;
   private CANSparkMax leftFrontMotor; //names CAN speed controllers named with the motor they are attached to
   private CANSparkMax leftRearMotor;
   private CANSparkMax rightFrontMotor;
@@ -72,9 +74,9 @@ public class Robot extends TimedRobot {
     rightRearMotor = new CANSparkMax(3, MotorType.kBrushless);
     leftMotors = new MotorControllerGroup(leftFrontMotor, leftRearMotor); //groups left motors together as a slingle object called left motors
     rightMotors = new MotorControllerGroup(rightFrontMotor, rightRearMotor);
-    rightMotors.setInverted(true);
     myRobot = new DifferentialDrive(leftMotors, rightMotors);
-    driverStick = new Joystick(0); //creates a new joystick on USB input 0
+    leftStick = new Joystick(0); //creates a new joystick on USB input 0
+    rightStick = new Joystick(1);
     intakeMotor = new CANSparkMax(5, MotorType.kBrushed);
     lifterMotor = new CANSparkMax(6, MotorType.kBrushless);
     shooterMotor = new CANSparkMax(7, MotorType.kBrushless);
@@ -82,6 +84,7 @@ public class Robot extends TimedRobot {
     shooterEncoder = shooterMotor.getEncoder(); 
     lifterSwitch = new DigitalInput(9);
     shooterPIDController = shooterMotor.getPIDController();
+    rightMotors.setInverted(true);
     // set PID coefficients
     shooterPIDController.setP(0.0018);
     shooterPIDController.setI(0.0062);
@@ -90,6 +93,8 @@ public class Robot extends TimedRobot {
     shooterPIDController.setFF(0.000015);
     shooterPIDController.setOutputRange(0, 1);
     maxRPM = 5700;
+    CameraServer.startAutomaticCapture();
+
     
 
   }
@@ -188,58 +193,57 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    if(driverStick.getRawButtonPressed(2)) {
+    if(rightStick.getRawButtonPressed(2)) {
       intakeMotor.set(0.5);
       intakeSolenoid.set(Value.kForward); //sets solenoid in forward position, can also set for kOff and kReverse
 
     }
 
-    if(driverStick.getRawButtonReleased(2)){
+    if(rightStick.getRawButtonReleased(2)){
       double startTime = Timer.getFPGATimestamp();
       double time = Timer.getFPGATimestamp();
       intakeSolenoid.set(Value.kReverse); //sets solenoid in reverse position, can also set for kOff and kForward
-      while(!((time - startTime > 1.5) || (ballPresent))){ //runs the lifter until a ball is detected or 5 seconds have passed
-        intakeMotor.set(0.5);
+      while(!((time - startTime > 1.5) || (ballPresent))){ //runs the lifter until a ball is detected or 1.5 seconds have passed
+        intakeMotor.set(0.6);
         lifterMotor.set(liftSpeed);
         time = Timer.getFPGATimestamp();
         ballPresent = lifterSwitch.get();
-        myRobot.arcadeDrive(-driverStick.getY(), driverStick.getX());
+        myRobot.tankDrive(-leftStick.getY(), -rightStick.getY());
       }
       intakeMotor.set(0); //when while loop is exited shut off motors and set ball present to false
       lifterMotor.set(0);
       
     }
-    if (driverStick.getRawButtonPressed(1)){
+    if (rightStick.getRawButtonPressed(1)){
       shooterPIDController.setReference(shootSpeed, CANSparkMax.ControlType.kVelocity);
       
     }
-    if(driverStick.getRawButtonReleased(1)){
+    if(rightStick.getRawButtonReleased(1)){
       shooterPIDController.setReference(0, CANSparkMax.ControlType.kVelocity);
       ballPresent = false;  //assumes that the ball has been launched
     }
-    if(driverStick.getRawButtonPressed(7)){
+    if(leftStick.getRawButtonPressed(3)){ //climber in
       climberMotor.set(1);
     }
-    if(driverStick.getRawButtonReleased(7)){
+    if(leftStick.getRawButtonReleased(3)){ //climber stop
       climberMotor.set(0);
     }
-    if(driverStick.getRawButtonPressed(6)){
+    if(leftStick.getRawButtonPressed(2)){ //climber out
       climberMotor.set(-1);
     }
-    if(driverStick.getRawButtonReleased(6)){
+    if(leftStick.getRawButtonReleased(2)){ //climber stop
       climberMotor.set(0);
     }
-    while(driverStick.getRawButtonPressed(4)){
-      lifterMotor.set(-0.5);
+    if(rightStick.getRawButtonPressed(4)){ //eject ball
       intakeMotor.set(-0.5);
-      myRobot.arcadeDrive(-driverStick.getY(), driverStick.getX()); 
+      lifterMotor.set(-0.5);
     }
-    if(driverStick.getRawButtonReleased(4)){
+    if(rightStick.getRawButtonReleased(4)){
       lifterMotor.set(0);
       intakeMotor.set(0);
     }
     //Vision autopilot command
-    while(driverStick.getRawButton(3)){
+    while(rightStick.getRawButton(3)){
       NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
       NetworkTableEntry tx = table.getEntry("tx");
       NetworkTableEntry ty = table.getEntry("ty");
@@ -247,12 +251,20 @@ public class Robot extends TimedRobot {
       double y = ty.getDouble(0.0);
       double heading_error = x;
       double distance_error = y;
-      myRobot.arcadeDrive(-distance_error*.07, heading_error*.05); //auto drive to zero error * a proportion constant, may need to add a minimum drive value
-      //shooterPIDController.setReference((shootSpeed-500), CANSparkMax.ControlType.kVelocity); //spool up shooter to just under shoot speed
+      if(distance_error<0){
+        myRobot.arcadeDrive(-distance_error*.15, heading_error*.05); //auto drive to zero error * a proportion constant, may need to add a minimum drive value
+        //shooterPIDController.setReference((shootSpeed-750), CANSparkMax.ControlType.kVelocity); //spool up shooter to just under shoot speed
+
+      }
+      else{
+        myRobot.arcadeDrive(-distance_error*.07, heading_error*.05); //auto drive to zero error * a proportion constant, may need to add a minimum drive value
+        //shooterPIDController.setReference((shootSpeed-750), CANSparkMax.ControlType.kVelocity); //spool up shooter to just under shoot speed
+
+      }
 
     }
-
-   myRobot.arcadeDrive(-driverStick.getY(), driverStick.getX()); 
+myRobot.tankDrive(-leftStick.getY(), -rightStick.getY());
+    //myRobot.tankDrive((Math.pow(-leftStick.getY(), 3)+-leftStick.getY()), (Math.pow(-rightStick.getY(), 3)+-rightStick.getY()));
 
   }
 

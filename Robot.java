@@ -252,19 +252,18 @@ public class Robot extends TimedRobot {
       double heading_error = x;
       double distance_error = y;
       if(distance_error<0){
-        myRobot.arcadeDrive(-distance_error*.15, heading_error*.05); //auto drive to zero error * a proportion constant, may need to add a minimum drive value
+        myRobot.arcadeDrive(-distance_error*.15, heading_error*.05); //auto drive from too far
         //shooterPIDController.setReference((shootSpeed-750), CANSparkMax.ControlType.kVelocity); //spool up shooter to just under shoot speed
 
       }
       else{
-        myRobot.arcadeDrive(-distance_error*.07, heading_error*.05); //auto drive to zero error * a proportion constant, may need to add a minimum drive value
+        myRobot.arcadeDrive(-distance_error*.07, heading_error*.05); //auto drive from too close
         //shooterPIDController.setReference((shootSpeed-750), CANSparkMax.ControlType.kVelocity); //spool up shooter to just under shoot speed
 
       }
 
     }
-myRobot.tankDrive(-leftStick.getY(), -rightStick.getY());
-    //myRobot.tankDrive((Math.pow(-leftStick.getY(), 3)+-leftStick.getY()), (Math.pow(-rightStick.getY(), 3)+-rightStick.getY()));
+myRobot.tankDrive(-leftStick.getY(), -rightStick.getY(),false); //tank drive robot without output squaring
 
   }
 

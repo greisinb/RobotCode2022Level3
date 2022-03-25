@@ -121,11 +121,14 @@ public class Robot extends TimedRobot {
       targetLights.set(false);
     }
     double shooterSpeed = shooterEncoder.getVelocity();  //sets the shooter speed variable
-    if(shooterSpeed > (shootSpeed-250)) { //runs the lifter motor only if the shooter motor has reached speed
+    if(shooterSpeed > (shootSpeed-250)) { //runs the lifter motor only if the shooter motor has reached shoot speed
       lifterMotor.set(liftSpeed);
     }
+    else if(shooterSpeed< -500){ //runs the lifter in reverse if shooter is run backwards to eject ball
+      lifterMotor.set(-.5); 
+    }
     else{
-      lifterMotor.set(0); //shuts off the lifter if shooter is under speed
+      lifterMotor.set(0); //shuts off lifter
     }
   }
 
@@ -239,7 +242,7 @@ public class Robot extends TimedRobot {
       shooterMotor.set(-0.25);
     }
     if(rightStick.getRawButtonReleased(4)){
-      lifterMotor.set(0);
+      intakeMotor.set(0);
       shooterMotor.set(0);
     }
     //Vision autopilot command

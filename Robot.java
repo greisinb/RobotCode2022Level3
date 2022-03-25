@@ -211,7 +211,7 @@ public class Robot extends TimedRobot {
         lifterMotor.set(liftSpeed);
         time = Timer.getFPGATimestamp();
         ballPresent = lifterSwitch.get();
-        myRobot.tankDrive(-leftStick.getY(), -rightStick.getY());
+        myRobot.arcadeDrive(-rightStick.getY(), rightStick.getX());
       }
       intakeMotor.set(0); //when while loop is exited shut off motors and set ball present to false
       lifterMotor.set(0);
@@ -244,6 +244,8 @@ public class Robot extends TimedRobot {
     if(rightStick.getRawButtonReleased(4)){
       intakeMotor.set(0);
       shooterMotor.set(0);
+      ballPresent=false;
+  
     }
     //Vision autopilot command
     while(rightStick.getRawButton(3)){
@@ -255,7 +257,7 @@ public class Robot extends TimedRobot {
       double heading_error = x;
       double distance_error = y;
       if(distance_error<0){
-        myRobot.arcadeDrive(-.35, heading_error*.05); //static distance control auto drive from too far
+        myRobot.arcadeDrive(.75, heading_error*.05); //static distance control auto drive from too far
 
         //myRobot.arcadeDrive(-distance_error*.15, heading_error*.05); // proportional distance control auto drive from too far
         //shooterPIDController.setReference((shootSpeed-750), CANSparkMax.ControlType.kVelocity); //spool up shooter to just under shoot speed
@@ -268,7 +270,7 @@ public class Robot extends TimedRobot {
       }
 
     }
-myRobot.tankDrive(-leftStick.getY(), -rightStick.getY(),false); //tank drive robot without output squaring
+myRobot.arcadeDrive(-rightStick.getY(), rightStick.getX(),true); //arcade drive robot without output squaring
 
   }
 

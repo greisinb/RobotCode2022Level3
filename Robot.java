@@ -252,7 +252,9 @@ public class Robot extends TimedRobot {
       double heading_error = x;
       double distance_error = y;
       if(distance_error<0){
-        myRobot.arcadeDrive(-distance_error*.15, heading_error*.05); //auto drive from too far
+        myRobot.arcadeDrive(-.35, heading_error*.05); //static distance control auto drive from too far
+
+        //myRobot.arcadeDrive(-distance_error*.15, heading_error*.05); // proportional distance control auto drive from too far
         //shooterPIDController.setReference((shootSpeed-750), CANSparkMax.ControlType.kVelocity); //spool up shooter to just under shoot speed
 
       }

@@ -236,11 +236,11 @@ public class Robot extends TimedRobot {
     }
     if(rightStick.getRawButtonPressed(4)){ //eject ball
       intakeMotor.set(-0.5);
-      lifterMotor.set(-0.5);
+      shooterMotor.set(-0.25);
     }
     if(rightStick.getRawButtonReleased(4)){
       lifterMotor.set(0);
-      intakeMotor.set(0);
+      shooterMotor.set(0);
     }
     //Vision autopilot command
     while(rightStick.getRawButton(3)){

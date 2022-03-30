@@ -160,11 +160,13 @@ public class Robot extends TimedRobot {
     else if((time - startTime > 2) && (time-startTime <4)){ //if time is greater than 2 and less than 4 seconds
       intakeSolenoid.set(Value.kReverse); //lift intake
       intakeMotor.set(0); //stop intake wheels
-      myRobot.arcadeDrive(0, 0-.37);
-      //rotate the robot
+      //myRobot.arcadeDrive(0, 0-.37); //for BLUE ALLIANCE
+      myRobot.arcadeDrive(0, 0.37); //for RED ALLIANCE
+
+      //rotate the robot 
       }
     else if((time - startTime > 4) && (time-startTime <7)){ //if time is greater than 4 and less than 7
-        myRobot.arcadeDrive(-distance_error*.05, heading_error*.05); //auto aim and range
+        myRobot.arcadeDrive(-distance_error*.05, heading_error*.03); //auto aim and range
       }
     else if((time - startTime > 7) && (time-startTime <14.5) && (targetAquired==1)){ //if time is greater than 7 and less than 11 and there is a visible target
       myRobot.arcadeDrive(0, .0); //stop the robot
